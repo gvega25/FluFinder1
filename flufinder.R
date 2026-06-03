@@ -20,6 +20,8 @@ trypsinize <- function(proteins) {
 split_peptides <- function(peptides) {
   library(stringr)
   lapply(peptides, str_split, pattern="")
+  
+  #the
 }
 
 

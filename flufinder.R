@@ -38,6 +38,7 @@ splitpeptides_to_masses <- function(aa) {
   lapply(peptide_masses, unlist)
 }
 
+# add split peptides to masses function
 
 # Function 5: count_matching_masses()
 count_matching_masses <- function(protein_masses, sample) {

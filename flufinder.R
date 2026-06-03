@@ -48,9 +48,8 @@ ggbarplot <- function(peptide_counts_table) {
   library(ggplot2)
   ggplot(peptide_counts_table) +
     aes(rownames(peptide_counts_table), peptide_counts) +
-    geom_col(fill="steelblue", width=0.5) +
+    geom_col(fill="pink", width=0.5) +
     theme_bw() +
     labs(x="Flu Strain", y="Peptide Counts")
 }
-
-#Hwllo
+}

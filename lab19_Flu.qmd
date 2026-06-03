@@ -1,10 +1,12 @@
 ---
-title: "Untitled"
-format: html
+title: "Lab 19: Flu Finder"
+author: "Abigail Perez & German Vega"
+format: pdf
 editor: visual
 ---
 
 ```{r}
+#| eval: false
 install.packages("seqinr")
 install.packages("stringr")
 ```
@@ -121,10 +123,9 @@ ggbarplot(counts_df)
 counts_df2 <- data.frame(peptide_counts=c(1, 2, 5), rownames=c("A", "B", "C"))
 ggbarplot(counts_df2)
 ```
-
 ```{r}
-list.files("Flu Project.Rproj")          # verify flufinder.R is there
-source("flufinder.R")  # loads all 6 functions
+list.files(".")          # verify flufinder.R is there
+source("flufinder.R")    # loads all 6 functions
 ```
 
 ```{r}
@@ -148,3 +149,72 @@ patient_sample <- scan("patient_sample.txt")
   split_peptides() |> splitpeptides_to_masses() |> 
   count_matching_masses(sample=patient_sample) |> ggbarplot()
 ```
+
+```{r}
+list.files("/Users/abbyperez/Library/Mobile Documents/com~apple~CloudDocs/BIMM 143/Flu Project")
+
+source("/Users/abbyperez/Library/Mobile Documents/com~apple~CloudDocs/BIMM 143/Flu Project/flufinder.R")
+```
+
+
+```{r}
+# Using scan() to generate a vector from a text file with space separated numbers
+patient_sample <- scan("patient_sample.txt")
+patient_sample
+```
+
+
+```{r}
+# Inspecting the flu protein database
+upload_fasta("flu_proteins_database.txt")
+```
+
+
+```{r}
+# Piping the flu protein database to trypsinize()
+"flu_proteins_database.txt" |> upload_fasta() |> trypsinize()
+```
+
+
+> **Q1: What do the output strings represent and why do they all end in R or K?**
+
+The output strings are tryptic peptide fragments from each flu strain's HA protein. They all end in R or K because trypsin cleaves specifically after those two amino acids, so every fragment (except the very last one) ends with either K or R.
+
+```{r}
+# Piping until splitpeptides_to_masses()
+"flu_proteins_database.txt" |> upload_fasta() |> trypsinize() |>
+split_peptides() |> splitpeptides_to_masses()
+```
+
+
+> **Q2: What do all the numbers represent?**
+
+The numbers are the calculated molecular masses (in Daltons) of each tryptic peptide, derived by summing the individual amino acid masses for each fragment.
+
+```{r}
+# Piping until count_matching_masses()
+"flu_proteins_database.txt" |> upload_fasta() |> trypsinize() |>
+split_peptides() |> splitpeptides_to_masses() |>
+count_matching_masses(sample=patient_sample)
+```
+
+
+> **Q3: What do the numbers in the table represent and why does the count_matching_masses() function need the sample input in addition to the standard input from the pipeline?**
+
+The numbers represent how many peptide masses from each flu strain match the masses detected in the patient's mass spec sample. count_matching_masses() needs the patient sample as a separate input because it's not part of the database pipeline — it's the external reference we're comparing against to identify the strain.
+
+```{r}
+# Using piping to consecutively run all functions of the flufinder script
+"flu_proteins_database.txt" |> upload_fasta() |> trypsinize() |>
+split_peptides() |> splitpeptides_to_masses() |>
+count_matching_masses(sample=patient_sample) |> ggbarplot()
+```
+
+
+> **Q4: Which flu strain do you order an mRNA vaccine to be mass produced for?**
+
+H1N1 — it has by far the most matches (35), so that's the strain to order the vaccine for.
+
+> **Q5: Why do the other flu strains show a subset of matches?**
+
+All flu strains share some evolutionarily conserved regions in their HA proteins, so a few peptides happen to have identical masses across strains. Those shared peptides show up as low-count matches (3–6) in the other strains, but only H1N1 matches nearly the entire patient sample.

@@ -1,0 +1,26 @@
+---
+title: "Lab_18"
+format: pdf
+editor: visual
+---
+
+```{r}
+source("flufinder.R")
+```
+
+
+```{r}
+# Load the functions
+source("flufinder.R")
+
+# Load patient sample
+patient_sample <- scan("patient_sample.txt")
+
+# Run full pipeline
+"flu_proteins_database.txt" |> upload_fasta() |> trypsinize() |>
+  split_peptides() |> splitpeptides_to_masses() |>
+  count_matching_masses(sample=patient_sample) |> ggbarplot()
+```
+
+
+

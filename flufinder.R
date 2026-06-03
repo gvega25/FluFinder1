@@ -10,6 +10,8 @@ upload_fasta <- function(fasta_filename) {
 trypsinize <- function(proteins) {
   library(stringr)
   lapply(proteins, str_split_1, pattern="(?<=R|K)")
+  
+  #add
 }
 
 

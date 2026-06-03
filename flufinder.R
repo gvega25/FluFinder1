@@ -60,3 +60,4 @@ ggbarplot <- function(peptide_counts_table) {
     labs(x="Flu Strain", y="Peptide Counts")
 }
 
+#barplot

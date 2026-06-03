@@ -1,0 +1,150 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+```{r}
+install.packages("seqinr")
+install.packages("stringr")
+```
+
+```{r}
+upload_fasta <- function(fasta_filename) {
+  library(seqinr)
+  read.fasta(fasta_filename, seqtype = "AA", as.string = TRUE,
+             set.attributes = FALSE)
+}
+```
+
+```{r}
+upload_fasta("testfasta.txt")       # should return list of proteins A, B, C
+upload_fasta("testfasta.txt")$A     # should return just protein A's sequence
+```
+
+```{r}
+trypsinize <- function(proteins) {
+  library(stringr)
+  lapply(proteins, str_split_1, pattern="(?<=R|K)")
+}
+```
+
+```{r}
+proteins <- list(A="LVKLHHIIFESMLKDMQRRHRVW", 
+                 B="ADEFQGSMQKIEACWQSYDVQF", 
+                 C="MINEPFSWRLEFHLSERKYDEIM")
+trypsinize(proteins)
+trypsinize(proteins)$A
+```
+
+```{r}
+split_peptides <- function(peptides) {
+  library(stringr)
+  lapply(peptides, str_split, pattern="")
+}
+```
+
+```{r}
+peptides <- list(A=c("LVK","LHHIIFESMLK","DMQR","R","HR","VW"), 
+                 B=c("ADEFQGSMQK","IEACWQSYDVQF"), 
+                 C=c("MINEPFSWR","LEFHLSER","K","YDEIM"))
+split_peptides(peptides)
+split_peptides(peptides)$B
+```
+
+```{r}
+splitpeptides_to_masses <- function(aa) {
+  aa_masses <- c(A=71.037, R=156.101, N=114.042, D=115.026, C=103.009, 
+                 Q=128.058, E=129.042, G=57.021, H=137.058, I=113.084, 
+                 L=113.084, K=128.094, M=131.040, F=147.068, P=97.052, 
+                 S=87.032, T=101.047, W=186.079, Y=163.063, V=99.068)
+  
+  peptide_masses <- aa
+  for(i in 1:length(aa)) {
+    peptide_masses[[i]] <- lapply(aa[[i]], function(x) sum(aa_masses[x]))
+  }
+  lapply(peptide_masses, unlist)
+}
+```
+
+```{r}
+aa <- list(A=list(c("L","V","K"), 
+                  c("L","H","H","I","I","F","E","S","M","L","K"), 
+                  c("D","M","Q","R")), 
+           B=list(c("A","D","E","F","Q","G","S","M","Q","K"), 
+                  c("I","E","A","C","W","Q","S","Y","D","V","Q","F")), 
+           C=list(c("M","I","N","E","P","F","S","W","R"), 
+                  c("L","E","F","H","L","S","E","R"), 
+                  c("Y","D","E","I","M")))
+splitpeptides_to_masses(aa)
+splitpeptides_to_masses(aa)$A    # expect: 340.246  1348.728  530.225
+```
+
+```{r}
+count_matching_masses <- function(protein_masses, sample) {
+  df <- as.data.frame(sapply(protein_masses, function(x) 
+    sum(as.character(sample) %in% as.character(x))))
+  names(df) <- "peptide_counts"
+  return(df)
+}
+```
+
+```{r}
+masses_list <- list(A=c(340.246, 1348.728, 530.225), 
+                    B=c(1121.476, 1469.624), 
+                    C=c(1160.540, 1011.511, 651.255))
+sample <- c(340.246, 530.225, 1348.728)
+count_matching_masses(masses_list, sample)
+# expect: A=3, B=0, C=0
+
+# Then test with a new random sample:
+sample2 <- c(1121.476, 1160.540, 340.246)
+count_matching_masses(masses_list, sample2)
+```
+
+```{r}
+ggbarplot <- function(peptide_counts_table) {
+  library(ggplot2)
+  ggplot(peptide_counts_table) +
+    aes(rownames(peptide_counts_table), peptide_counts) +
+    geom_col(fill="maroon2", width=0.5) +
+    theme_bw() +
+    labs(x="Flu Strain", y="Peptide Counts")
+}
+```
+
+```{r}
+counts_df <- data.frame(peptide_counts=c(3, 0, 0), rownames=c("A", "B", "C"))
+ggbarplot(counts_df)
+
+# Also test with different numbers:
+counts_df2 <- data.frame(peptide_counts=c(1, 2, 5), rownames=c("A", "B", "C"))
+ggbarplot(counts_df2)
+```
+
+```{r}
+list.files("Flu Project.Rproj")          # verify flufinder.R is there
+source("flufinder.R")  # loads all 6 functions
+```
+
+```{r}
+# Load patient sample
+patient_sample <- scan("patient_sample.txt")
+
+# Step 1-2: upload and trypsinize
+"flu_proteins_database.txt" |> upload_fasta() |> trypsinize()
+
+# Step 1-4: add splitting and mass calculation
+"flu_proteins_database.txt" |> upload_fasta() |> trypsinize() |> 
+  split_peptides() |> splitpeptides_to_masses()
+
+# Step 1-5: count matches against patient sample
+"flu_proteins_database.txt" |> upload_fasta() |> trypsinize() |> 
+  split_peptides() |> splitpeptides_to_masses() |> 
+  count_matching_masses(sample=patient_sample)
+
+# Full pipeline with plot
+"flu_proteins_database.txt" |> upload_fasta() |> trypsinize() |> 
+  split_peptides() |> splitpeptides_to_masses() |> 
+  count_matching_masses(sample=patient_sample) |> ggbarplot()
+```
